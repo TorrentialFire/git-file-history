@@ -7,6 +7,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -143,8 +145,11 @@ public class GitFileHistory {
                             Objects.requireNonNull(attrs);
 
                             Path relPath = repoLocation.getParent().relativize(file);
+                            float size = (float)relPath.toFile().length() / 1024.0f;
+                            NumberFormat df = DecimalFormat.getNumberInstance();
+                            df.setMaximumFractionDigits(2);
 
-                            System.out.println(relPath.toString());
+                            System.out.println(relPath.toString() + " - " + df.format(size) + " KB");
 
                             return FileVisitResult.CONTINUE;
                         }
