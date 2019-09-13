@@ -1,0 +1,12 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - GitFileHistory",
+            "request": "launch",
+            "mainClass": "com.aboyandhiscode.gitfilehistory.GitFileHistory",
+            "projectName": "gitfilehistory",
+            "args": "\"${workspaceFolder}\\.git\""
+        }
+    ]
+}
