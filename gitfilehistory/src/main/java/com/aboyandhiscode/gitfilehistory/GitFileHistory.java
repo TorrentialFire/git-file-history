@@ -122,6 +122,21 @@ public class GitFileHistory {
                     System.out.println("Checked out commit: " + commit.getId().abbreviate(8).name() + " - " + commit.getShortMessage());
                     Files.walkFileTree(repoLocation.getParent(), new SimpleFileVisitor<Path>(){
                         @Override
+                        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                            throws IOException
+                        {
+                            Objects.requireNonNull(dir);
+                            Objects.requireNonNull(attrs);
+
+                            FileVisitResult result = FileVisitResult.CONTINUE;
+                            if(dir.getFileName().toString().equals(".git")) {
+                                result = FileVisitResult.SKIP_SUBTREE;
+                            }
+
+                            return FileVisitResult.CONTINUE;
+                        }
+
+                        @Override
                         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
                         {
                             Objects.requireNonNull(file);
