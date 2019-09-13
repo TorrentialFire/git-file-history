@@ -19,8 +19,10 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
+import org.eclipse.jgit.errors.NoWorkTreeException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefDatabase;
@@ -94,10 +96,10 @@ public class GitFileHistory {
                     Map<ObjectId, String> revsForCommit;
                     try {
                         revsForCommit = git.nameRev().addPrefix("refs/heads").add(leafCommit.getId()).call();
-                    
+
                         StringBuilder revs = new StringBuilder();
                         revsForCommit.values().forEach(str -> revs.append(str + ", "));
-                        if(revs.length() > 3)
+                        if (revs.length() > 3)
                             revs.replace(revs.length() - 2, revs.length() - 1, "");
 
                         System.out.println("Leaf commit! - " + leafCommit.getShortMessage() + " - " + revs.toString());
@@ -106,7 +108,15 @@ public class GitFileHistory {
                     }
                 }
             }
-            
+
+            try {
+                /* A thorough and hard cleaning of the working directory before checking out different commits. */
+                git.clean().setForce(true).setCleanDirectories(true).call();
+                git.reset().setMode(ResetType.HARD).call();
+            } catch (NoWorkTreeException | GitAPIException e1) {
+                e1.printStackTrace();
+            }
+
             RevCommit commit = null;
             while((commit = revWalk.next()) != null) {
                 String msg = commit.getShortMessage();
