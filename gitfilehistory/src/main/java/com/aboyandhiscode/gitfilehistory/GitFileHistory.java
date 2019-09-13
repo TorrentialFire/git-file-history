@@ -1,5 +1,6 @@
 package com.aboyandhiscode.gitfilehistory;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -159,9 +160,17 @@ public class GitFileHistory {
                             // float size = (float)relPath.toFile().length() / 1024.0f;
                             // NumberFormat df = DecimalFormat.getNumberInstance();
                             // df.setMaximumFractionDigits(2);
-                            long size = relPath.toFile().length();
+                            long size = Files.size(file);
+                            
+                            String ext = "";
+                            int i = file.toString().lastIndexOf(".");
+                            int p = file.toString().lastIndexOf(File.separator);
+                            if(i > p) {
+                                ext = file.toString().substring(i + 1);
+                            }
+
                             // System.out.println(relPath.toString() + " - " + df.format(size) + " KB");
-                            System.out.println(relPath.toString() + " - " + size + " Bytes");
+                            System.out.println(relPath.toString() + " - " + size + " Bytes, ext: " + ext);
 
                             return FileVisitResult.CONTINUE;
                         }
