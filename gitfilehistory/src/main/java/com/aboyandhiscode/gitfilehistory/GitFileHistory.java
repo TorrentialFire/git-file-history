@@ -155,11 +155,13 @@ public class GitFileHistory {
                             Objects.requireNonNull(attrs);
 
                             Path relPath = repoLocation.getParent().relativize(file);
-                            float size = (float)relPath.toFile().length() / 1024.0f;
-                            NumberFormat df = DecimalFormat.getNumberInstance();
-                            df.setMaximumFractionDigits(2);
 
-                            System.out.println(relPath.toString() + " - " + df.format(size) + " KB");
+                            // float size = (float)relPath.toFile().length() / 1024.0f;
+                            // NumberFormat df = DecimalFormat.getNumberInstance();
+                            // df.setMaximumFractionDigits(2);
+                            long size = relPath.toFile().length();
+                            // System.out.println(relPath.toString() + " - " + df.format(size) + " KB");
+                            System.out.println(relPath.toString() + " - " + size + " Bytes");
 
                             return FileVisitResult.CONTINUE;
                         }
