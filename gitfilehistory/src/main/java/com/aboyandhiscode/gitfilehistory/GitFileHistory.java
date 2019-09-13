@@ -1,14 +1,19 @@
 package com.aboyandhiscode.gitfilehistory;
 
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.eclipse.jgit.api.Git;
@@ -95,7 +100,6 @@ public class GitFileHistory {
 
                         System.out.println("Leaf commit! - " + leafCommit.getShortMessage() + " - " + revs.toString());
                     } catch (JGitInternalException | GitAPIException e) {
-                        // TODO Auto-generated catch block
                         e.printStackTrace();
                     }
                 }
@@ -114,6 +118,21 @@ public class GitFileHistory {
 
                 try {
                     git.checkout().setName(commit.getName()).call();
+
+                    System.out.println("Checked out commit: " + commit.getId().abbreviate(8).toString() + " - " + commit.getShortMessage());
+                    Files.walkFileTree(repoLocation.getParent(), new SimpleFileVisitor<Path>(){
+                        @Override
+                        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
+                        {
+                            Objects.requireNonNull(file);
+                            Objects.requireNonNull(attrs);
+
+                            System.out.println(file.toString());
+
+                            return FileVisitResult.CONTINUE;
+                        }
+                    });
+                    System.out.println("\n\n");
                 } catch (GitAPIException e) {
                     e.printStackTrace();
                 }
