@@ -142,7 +142,9 @@ public class GitFileHistory {
                             Objects.requireNonNull(file);
                             Objects.requireNonNull(attrs);
 
-                            System.out.println(file.toString());
+                            Path relPath = repoLocation.getParent().relativize(file);
+
+                            System.out.println(relPath.toString());
 
                             return FileVisitResult.CONTINUE;
                         }
