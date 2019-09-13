@@ -56,8 +56,8 @@ public class GitFileHistory {
             RevCommit commit = null;
             while((commit = revWalk.next()) != null) {
                 String msg = commit.getShortMessage();
-                String authorEmail = commit.getAuthorIdent().getEmailAddress();
-                String date = commit.getAuthorIdent().getWhen()
+                String authorEmail = commit.getCommitterIdent().getEmailAddress();
+                String date = commit.getCommitterIdent().getWhen()
                     .toInstant()
                     .atZone(ZoneId.systemDefault())
                     .toLocalDateTime()
