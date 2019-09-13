@@ -133,7 +133,7 @@ public class GitFileHistory {
                                 result = FileVisitResult.SKIP_SUBTREE;
                             }
 
-                            return FileVisitResult.CONTINUE;
+                            return result;
                         }
 
                         @Override
