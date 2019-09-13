@@ -136,6 +136,13 @@ public class GitFileHistory {
                 } catch (GitAPIException e) {
                     e.printStackTrace();
                 }
+
+                try {
+                    git.checkout().setName("master").call();
+                } catch (GitAPIException e) {
+                    e.printStackTrace();
+                }
+    
             }
 
             revWalk.close();
