@@ -77,6 +77,9 @@ public class GitFileHistory {
                  * We might encounter the same leaf commit multiple times when parsing all refs,
                  * but RevWalk.markStart() will simply return if a commit is seen more than
                  * once, so there is no need to track repeated leaves at this level.
+                 * 
+                 * However, for the purposes of logging or output we may want to maintain a set
+                 * of RevCommits.
                  */
 
                 if (leafCommits.add(leafCommit)) {
@@ -107,7 +110,13 @@ public class GitFileHistory {
                     .atZone(ZoneId.systemDefault())
                     .toLocalDateTime()
                     .toString();
-                //System.out.println(date + ": " + msg + " - " +authorEmail);
+                System.out.println(date + ": " + msg + " - " +authorEmail);
+
+                try {
+                    git.checkout().setName(commit.getName()).call();
+                } catch (GitAPIException e) {
+                    e.printStackTrace();
+                }
             }
 
             revWalk.close();
