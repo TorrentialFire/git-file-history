@@ -32,6 +32,12 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevWalk;
 
+/*
+ * Map<Path, A_CLASS>
+ * A_CLASS has PathMetaData(filename, ext) "Static Data associated with the path."
+ *         has a Map<RevCommit, Long> A map representing the size of the file at each point in the commit history.
+ */
+
 public class GitFileHistory {
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -163,14 +169,25 @@ public class GitFileHistory {
                             long size = Files.size(file);
                             
                             String ext = "";
+                            String name = "";
                             int i = file.toString().lastIndexOf(".");
                             int p = file.toString().lastIndexOf(File.separator);
                             if(i > p) {
                                 ext = file.toString().substring(i + 1);
+                                name = file.toString().substring(p + 1, i);
+                            }
+                            if(name.isEmpty()) {
+                                if(ext.isEmpty()) {
+                                    name = file.getFileName().toString();
+                                } else {
+                                    name = "." + ext;
+                                }
+                            } else {
+                                name += "." + ext;
                             }
 
                             // System.out.println(relPath.toString() + " - " + df.format(size) + " KB");
-                            System.out.println(relPath.toString() + " - " + size + " Bytes, ext: " + ext);
+                            System.out.println(relPath.toString() + " - " + size + " Bytes, ext: " + ext + ", name: " + name);
 
                             return FileVisitResult.CONTINUE;
                         }
