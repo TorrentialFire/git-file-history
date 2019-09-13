@@ -111,7 +111,7 @@ public class GitFileHistory {
 
             try {
                 /* A thorough and hard cleaning of the working directory before checking out different commits. */
-                git.clean().setForce(true).setCleanDirectories(true).call();
+                git.clean().setForce(true).setCleanDirectories(true).setIgnore(false).call();
                 git.reset().setMode(ResetType.HARD).call();
             } catch (NoWorkTreeException | GitAPIException e1) {
                 e1.printStackTrace();
