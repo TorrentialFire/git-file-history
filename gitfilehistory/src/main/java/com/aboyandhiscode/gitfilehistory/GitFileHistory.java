@@ -6,9 +6,17 @@ import java.nio.file.Paths;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.JGitInternalException;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevSort;
@@ -27,7 +35,7 @@ public class GitFileHistory {
         gfh.mapHistory();
     }
 
-    private List<String> headers = new ArrayList<>(Arrays.asList(new String[] {"Path", "Extension"}));
+    private List<String> headers = new ArrayList<>(Arrays.asList(new String[] { "Path", "Extension" }));
 
     private Path repoLocation;
 
@@ -38,21 +46,58 @@ public class GitFileHistory {
     public void mapHistory() {
         try {
             Git git = Git.open(repoLocation.toFile());
-            /* This code doesn't allow us to specify reverse-chronological order, so let's use some code that does... */
+            /*
+             * This code doesn't allow us to specify reverse-chronological order, so let's
+             * use some code that does...
+             */
             // Iterable<RevCommit> logResult = git.log().all().call();
             // Iterator<RevCommit> commitItr = logResult.iterator();
-            
-            // while(commitItr.hasNext()) {
-            //     RevCommit commit = commitItr.next();
 
-            //     System.out.println(commit.getShortMessage());
+            // while(commitItr.hasNext()) {
+            // RevCommit commit = commitItr.next();
+
+            // System.out.println(commit.getShortMessage());
             // }
-            
+
             Repository repo = git.getRepository();
             RevWalk revWalk = new RevWalk(repo);
-            revWalk.markStart(revWalk.parseCommit(repo.resolve("HEAD")));
+            /*
+             * We don't need to mark the start at "HEAD" anymore because we will find all
+             * leaves and work backwards from the initial commit to them.
+             */
+            // revWalk.markStart(revWalk.parseCommit(repo.resolve("HEAD")));
             revWalk.sort(RevSort.COMMIT_TIME_DESC, true);
             revWalk.sort(RevSort.REVERSE, true);
+
+            List<Ref> allRefs = repo.getRefDatabase().getRefsByPrefix(RefDatabase.ALL);
+            Set<RevCommit> leafCommits = new HashSet<>();
+            for (Ref ref : allRefs) {
+                RevCommit leafCommit = revWalk.parseCommit(ref.getLeaf().getObjectId());
+                /*
+                 * We might encounter the same leaf commit multiple times when parsing all refs,
+                 * but RevWalk.markStart() will simply return if a commit is seen more than
+                 * once, so there is no need to track repeated leaves at this level.
+                 */
+
+                if (leafCommits.add(leafCommit)) {
+                    revWalk.markStart(leafCommit);
+                    Map<ObjectId, String> revsForCommit;
+                    try {
+                        revsForCommit = git.nameRev().addPrefix("refs/heads").add(leafCommit.getId()).call();
+                    
+                        StringBuilder revs = new StringBuilder();
+                        revsForCommit.values().forEach(str -> revs.append(str + ", "));
+                        if(revs.length() > 3)
+                            revs.replace(revs.length() - 2, revs.length() - 1, "");
+
+                        System.out.println("Leaf commit! - " + leafCommit.getShortMessage() + " - " + revs.toString());
+                    } catch (JGitInternalException | GitAPIException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+            }
+            
             RevCommit commit = null;
             while((commit = revWalk.next()) != null) {
                 String msg = commit.getShortMessage();
@@ -62,7 +107,7 @@ public class GitFileHistory {
                     .atZone(ZoneId.systemDefault())
                     .toLocalDateTime()
                     .toString();
-                System.out.println(date + ": " + msg + " - " +authorEmail);
+                //System.out.println(date + ": " + msg + " - " +authorEmail);
             }
 
             revWalk.close();
