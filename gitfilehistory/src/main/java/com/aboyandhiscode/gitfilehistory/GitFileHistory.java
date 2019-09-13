@@ -119,7 +119,7 @@ public class GitFileHistory {
                 try {
                     git.checkout().setName(commit.getName()).call();
 
-                    System.out.println("Checked out commit: " + commit.getId().abbreviate(8).toString() + " - " + commit.getShortMessage());
+                    System.out.println("Checked out commit: " + commit.getId().abbreviate(8).name() + " - " + commit.getShortMessage());
                     Files.walkFileTree(repoLocation.getParent(), new SimpleFileVisitor<Path>(){
                         @Override
                         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
@@ -132,7 +132,7 @@ public class GitFileHistory {
                             return FileVisitResult.CONTINUE;
                         }
                     });
-                    System.out.println("\n\n");
+                    System.out.println("\n");
                 } catch (GitAPIException e) {
                     e.printStackTrace();
                 }
