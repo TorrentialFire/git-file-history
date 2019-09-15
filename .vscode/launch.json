@@ -6,7 +6,7 @@
             "request": "launch",
             "mainClass": "com.aboyandhiscode.gitfilehistory.GitFileHistory",
             "projectName": "gitfilehistory",
-            "args": "\"${workspaceFolder}\\..\\gfh2\\.git\""
+            "args": "\"${workspaceFolder}\\.git\""
         }
     ]
 }

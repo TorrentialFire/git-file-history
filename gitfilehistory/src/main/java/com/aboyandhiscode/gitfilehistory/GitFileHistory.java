@@ -24,13 +24,17 @@ import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.errors.NoWorkTreeException;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevSort;
+import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.treewalk.TreeWalk;
 
 /*
  * Map<Path, A_CLASS>
@@ -62,18 +66,6 @@ public class GitFileHistory {
     public void mapHistory() {
         try {
             Git git = Git.open(repoLocation.toFile());
-            /*
-             * This code doesn't allow us to specify reverse-chronological order, so let's
-             * use some code that does...
-             */
-            // Iterable<RevCommit> logResult = git.log().all().call();
-            // Iterator<RevCommit> commitItr = logResult.iterator();
-
-            // while(commitItr.hasNext()) {
-            // RevCommit commit = commitItr.next();
-
-            // System.out.println(commit.getShortMessage());
-            // }
 
             Repository repo = git.getRepository();
             RevWalk revWalk = new RevWalk(repo);
@@ -116,99 +108,130 @@ public class GitFileHistory {
                 }
             }
 
-            try {
-                /* A thorough and hard cleaning of the working directory before checking out different commits. */
-                git.clean().setForce(true).setCleanDirectories(true).setIgnore(false).call();
-                git.reset().setMode(ResetType.HARD).call();
-            } catch (NoWorkTreeException | GitAPIException e1) {
-                e1.printStackTrace();
-            }
+            
+            TreeWalk treeWalk = new TreeWalk(repo);
 
+            ObjectReader objectReader = repo.newObjectReader();
             RevCommit commit = null;
             while((commit = revWalk.next()) != null) {
-                String msg = commit.getShortMessage();
-                String authorEmail = commit.getCommitterIdent().getEmailAddress();
-                String date = commit.getCommitterIdent().getWhen()
-                    .toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDateTime()
-                    .toString();
-                System.out.println(date + ": " + msg + " - " +authorEmail);
+                RevTree revTree = commit.getTree();
+                
+                
+                treeWalk.reset(revTree);
+                while(treeWalk.next()) {
+                    if(treeWalk.isSubtree()) {
+                        treeWalk.enterSubtree();
+                        continue;
+                    }
+                    Path path = Paths.get(treeWalk.getPathString());
 
-                try {
-                    git.checkout().setName(commit.getName()).call();
+                    long size = objectReader.getObjectSize(treeWalk.getObjectId(0), Constants.OBJ_BLOB);
 
-                    System.out.println("Checked out commit: " + commit.getId().abbreviate(8).name() + " - " + commit.getShortMessage());
-                    Files.walkFileTree(repoLocation.getParent(), new SimpleFileVisitor<Path>(){
-                        @Override
-                        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                            throws IOException
-                        {
-                            Objects.requireNonNull(dir);
-                            Objects.requireNonNull(attrs);
+                    System.out.println(path.toString() + " - " + size);
 
-                            FileVisitResult result = FileVisitResult.CONTINUE;
-                            if(dir.getFileName().toString().equals(".git")) {
-                                result = FileVisitResult.SKIP_SUBTREE;
-                            }
-
-                            return result;
-                        }
-
-                        @Override
-                        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
-                        {
-                            Objects.requireNonNull(file);
-                            Objects.requireNonNull(attrs);
-
-                            Path relPath = repoLocation.getParent().relativize(file);
-
-                            // float size = (float)relPath.toFile().length() / 1024.0f;
-                            // NumberFormat df = DecimalFormat.getNumberInstance();
-                            // df.setMaximumFractionDigits(2);
-                            long size = Files.size(file);
-                            
-                            String ext = "";
-                            String name = "";
-                            int i = file.toString().lastIndexOf(".");
-                            int p = file.toString().lastIndexOf(File.separator);
-                            if(i > p) {
-                                ext = file.toString().substring(i + 1);
-                                name = file.toString().substring(p + 1, i);
-                            }
-                            if(name.isEmpty()) {
-                                if(ext.isEmpty()) {
-                                    name = file.getFileName().toString();
-                                } else {
-                                    name = "." + ext;
-                                }
-                            } else {
-                                name += "." + ext;
-                            }
-
-                            // System.out.println(relPath.toString() + " - " + df.format(size) + " KB");
-                            System.out.println(relPath.toString() + " - " + size + " Bytes, ext: " + ext + ", name: " + name);
-
-                            return FileVisitResult.CONTINUE;
-                        }
-                    });
-                    System.out.println("\n");
-                } catch (GitAPIException e) {
-                    e.printStackTrace();
                 }
-
-                try {
-                    git.checkout().setName("master").call();
-                } catch (GitAPIException e) {
-                    e.printStackTrace();
-                }
-    
+                System.out.println("\n");
             }
 
+            treeWalk.close();
             revWalk.close();
+            
+        //     try {
+        //         /* A thorough and hard cleaning of the working directory before checking out different commits. */
+        //         git.clean().setForce(true).setCleanDirectories(true).setIgnore(false).call();
+        //         git.reset().setMode(ResetType.HARD).call();
+        //     } catch (NoWorkTreeException | GitAPIException e1) {
+        //         e1.printStackTrace();
+        //     }
+
+        //     RevCommit commit = null;
+        //     while((commit = revWalk.next()) != null) {
+        //         String msg = commit.getShortMessage();
+        //         String authorEmail = commit.getCommitterIdent().getEmailAddress();
+        //         String date = commit.getCommitterIdent().getWhen()
+        //             .toInstant()
+        //             .atZone(ZoneId.systemDefault())
+        //             .toLocalDateTime()
+        //             .toString();
+        //         System.out.println(date + ": " + msg + " - " +authorEmail);
+
+        //         try {
+        //             git.checkout().setName(commit.getName()).call();
+
+        //             System.out.println("Checked out commit: " + commit.getId().abbreviate(8).name() + " - " + commit.getShortMessage());
+        //             Files.walkFileTree(repoLocation.getParent(), new SimpleFileVisitor<Path>(){
+        //                 @Override
+        //                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+        //                     throws IOException
+        //                 {
+        //                     Objects.requireNonNull(dir);
+        //                     Objects.requireNonNull(attrs);
+
+        //                     FileVisitResult result = FileVisitResult.CONTINUE;
+        //                     if(dir.getFileName().toString().equals(".git")) {
+        //                         result = FileVisitResult.SKIP_SUBTREE;
+        //                     }
+
+        //                     return result;
+        //                 }
+
+        //                 @Override
+        //                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
+        //                 {
+        //                     Objects.requireNonNull(file);
+        //                     Objects.requireNonNull(attrs);
+
+        //                     Path relPath = repoLocation.getParent().relativize(file);
+
+        //                     // float size = (float)relPath.toFile().length() / 1024.0f;
+        //                     // NumberFormat df = DecimalFormat.getNumberInstance();
+        //                     // df.setMaximumFractionDigits(2);
+        //                     long size = Files.size(file);
+                            
+        //                     String ext = "";
+        //                     String name = "";
+        //                     int i = file.toString().lastIndexOf(".");
+        //                     int p = file.toString().lastIndexOf(File.separator);
+        //                     if(i > p) {
+        //                         ext = file.toString().substring(i + 1);
+        //                         name = file.toString().substring(p + 1, i);
+        //                     }
+        //                     if(name.isEmpty()) {
+        //                         if(ext.isEmpty()) {
+        //                             name = file.getFileName().toString();
+        //                         } else {
+        //                             name = "." + ext;
+        //                         }
+        //                     } else {
+        //                         name += "." + ext;
+        //                     }
+
+        //                     // System.out.println(relPath.toString() + " - " + df.format(size) + " KB");
+        //                     System.out.println(relPath.toString() + " - " + size + " Bytes, ext: " + ext + ", name: " + name);
+
+        //                     return FileVisitResult.CONTINUE;
+        //                 }
+        //             });
+        //             System.out.println("\n");
+        //         } catch (GitAPIException e) {
+        //             e.printStackTrace();
+        //         }
+
+        //         try {
+        //             git.checkout().setName("master").call();
+        //         } catch (GitAPIException e) {
+        //             e.printStackTrace();
+        //         }
+    
+        //     }
+
+        //     revWalk.close();
+
+            
 
         } catch (IOException e) {
             e.printStackTrace();
         }
+        
     }
 }
